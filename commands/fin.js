@@ -11,19 +11,16 @@ module.exports = {
     const data = load();
     const uid = interaction.user.id;
     const shifts = data.shifts || {};
-    // Lister les shifts actifs du chatter
     const mesShifts = Object.entries(shifts).filter(([k, s]) => s.uid === uid);
     if (mesShifts.length === 0) {
       return interaction.reply({ content: 'Tu nas aucun shift actif.', ephemeral: true });
     }
-    // Construire le hint pour le modal
-    const hintLines = mesShifts.map(([k, s], i) => `${i+1}. ${s.modele} (${s.plateforme}) - depuis <t:${Math.floor(s.debut/1000)}:R>`).join('\n');
     const modal = new ModalBuilder().setCustomId('modal_fin').setTitle('Fin de Shift');
     const modeleInput = new TextInputBuilder()
       .setCustomId('modele')
       .setLabel('Nom de la modele (quel shift terminer ?)')
       .setStyle(TextInputStyle.Short)
-      .setPlaceholder(mesShifts.length === 1 ? mesShifts[0][1].modele : `Shifts actifs: ${mesShifts.map(([,s])=>s.modele).join(', ')}`)
+      .setPlaceholder(mesShifts.length === 1 ? mesShifts[0][1].modele : `Shifts: ${mesShifts.map(([,s])=>s.modele).join(', ')}`)
       .setRequired(true);
     const caInput = new TextInputBuilder()
       .setCustomId('ca')
@@ -44,43 +41,40 @@ module.exports = {
     const modeleSearch = interaction.fields.getTextInputValue('modele').toLowerCase().trim();
     const ca = interaction.fields.getTextInputValue('ca');
     const shifts = data.shifts || {};
-    // Trouver le shift correspondant
-    const found = Object.entries(shifts).find(([k, s]) =>
-      s.uid === uid && s.modele.toLowerCase().includes(modeleSearch)
-    );
+    const found = Object.entries(shifts).find(([k, s]) => s.uid === uid && s.modele.toLowerCase().includes(modeleSearch));
     if (!found) {
-      return interaction.reply({ content: `Aucun shift actif trouve pour la modele "${modeleSearch}".`, ephemeral: true });
+      return interaction.reply({ content: `Aucun shift actif pour "${modeleSearch}".`, ephemeral: true });
     }
     const [shiftKey, shift] = found;
     const now = Date.now();
     const dureeTotal = now - shift.debut;
     const dureeEffective = dureeTotal - shift.totalPause;
+    const embed = {
+      color: 0xED4245,
+      title: '🔴 Shift Termine',
+      fields: [
+        { name: '🧑‍💻 Chatter', value: username, inline: true },
+        { name: '👩 Modele', value: shift.modele, inline: true },
+        { name: '📱 Plateforme', value: shift.plateforme, inline: true },
+        { name: '⏰ Debut', value: `<t:${Math.floor(shift.debut/1000)}:F>`, inline: true },
+        { name: '🏁 Fin', value: `<t:${Math.floor(now/1000)}:F>`, inline: true },
+        { name: '💶 CA du shift', value: `${ca}€`, inline: true },
+        { name: '⏱️ Temps total', value: fmt(dureeTotal), inline: true },
+        { name: '✅ Temps effectif', value: fmt(dureeEffective), inline: true },
+        { name: '⏸️ Pause totale', value: fmt(shift.totalPause), inline: true },
+      ],
+      footer: { text: 'AgencyBot • Pointage' },
+      timestamp: new Date(),
+    };
     const salonId = process.env.CHANNEL_POINTAGE;
     const salon = salonId ? client.channels.cache.get(salonId) : null;
     if (salon && shift.messageId) {
       const msg = await salon.messages.fetch(shift.messageId).catch(() => null);
-      if (msg) await msg.edit({
-        embeds: [{
-          color: 0xED4245,
-          title: '🔴 Shift Termine',
-          fields: [
-            { name: '🧑‍💻 Chatter', value: username, inline: true },
-            { name: '👩 Modele', value: shift.modele, inline: true },
-            { name: '📱 Plateforme', value: shift.plateforme, inline: true },
-            { name: '⏰ Debut', value: `<t:${Math.floor(shift.debut/1000)}:F>`, inline: true },
-            { name: '🏁 Fin', value: `<t:${Math.floor(now/1000)}:F>`, inline: true },
-            { name: '💶 CA du shift', value: `${ca}€`, inline: true },
-            { name: '⏱️ Temps total', value: fmt(dureeTotal), inline: true },
-            { name: '✅ Temps effectif', value: fmt(dureeEffective), inline: true },
-            { name: '⏸️ Pause totale', value: fmt(shift.totalPause), inline: true },
-          ],
-          footer: { text: 'AgencyBot • Pointage' },
-          timestamp: new Date(),
-        }]
-      });
+      if (msg) await msg.edit({ embeds: [embed] });
     }
     delete data.shifts[shiftKey];
     save(data);
-    return interaction.reply({ content: `🔴 Shift **${shift.modele}** terminé ! Temps effectif : **${fmt(dureeEffective)}** | CA : **${ca}€**`, ephemeral: true });
+    // Reponse publique avec l'embed complet
+    return interaction.reply({ embeds: [embed] });
   }
 };
