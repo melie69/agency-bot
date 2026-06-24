@@ -9,6 +9,7 @@ module.exports = {
   async execute(interaction, client) {
     const data = load();
     const uid = interaction.user.id;
+    const username = interaction.member?.displayName || interaction.user.username;
     if (!data[uid]?.actif) return interaction.reply({ content: 'Pas de shift actif.', ephemeral: true });
     if (!data[uid].enPause) return interaction.reply({ content: 'Tu nes pas en pause.', ephemeral: true });
     const now = Date.now();
@@ -23,17 +24,17 @@ module.exports = {
       if (msg) await msg.edit({
         embeds: [{
           color: 0x57F287,
-          title: 'De Retour',
-          description: `<@${uid}> a repris son shift`,
+          title: '🟢 Shift en cours',
           fields: [
-            { name: 'Debut', value: `<t:${Math.floor(data[uid].debut/1000)}:F>`, inline: true },
-            { name: 'Statut', value: 'En ligne', inline: true },
-            { name: 'Total pause', value: `${Math.floor(data[uid].totalPause/60000)} min`, inline: true }
+            { name: 'Chatter', value: username, inline: true },
+            { name: 'Reprise', value: `<t:${Math.floor(now/1000)}:F>`, inline: true },
+            { name: 'Statut', value: '▶️ En service', inline: true },
           ],
-          timestamp: new Date().toISOString()
+          footer: { text: 'AgencyBot • Pointage' },
+          timestamp: new Date(),
         }]
       });
     }
-    await interaction.reply({ content: 'Reprise notee !', ephemeral: true });
+    return interaction.reply({ content: `▶️ Reprise enregistrée, **${username}** !`, ephemeral: true });
   }
 };
