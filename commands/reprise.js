@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const fs = require('fs'), path = require('path');
 const dataPath = path.join(__dirname, '../data/shifts.json');
-function load() { return JSON.parse(fs.readFileSync(dataPath)); }
+function load() { if (!fs.existsSync(dataPath)) return {}; return JSON.parse(fs.readFileSync(dataPath)); }
 function save(d) { fs.writeFileSync(dataPath, JSON.stringify(d, null, 2)); }
 
 module.exports = {
@@ -10,31 +10,40 @@ module.exports = {
     const data = load();
     const uid = interaction.user.id;
     const username = interaction.member?.displayName || interaction.user.username;
-    if (!data[uid]?.actif) return interaction.reply({ content: 'Pas de shift actif.', ephemeral: true });
-    if (!data[uid].enPause) return interaction.reply({ content: 'Tu nes pas en pause.', ephemeral: true });
+    const shifts = data.shifts || {};
+    const mesShiftsPauses = Object.entries(shifts).filter(([k, s]) => s.uid === uid && s.enPause);
+    if (mesShiftsPauses.length === 0) {
+      return interaction.reply({ content: 'Aucun shift en pause.', ephemeral: true });
+    }
     const now = Date.now();
-    data[uid].totalPause += now - data[uid].debutPause;
-    data[uid].enPause = false;
-    data[uid].debutPause = null;
-    save(data);
+    let count = 0;
     const salonId = process.env.CHANNEL_POINTAGE;
     const salon = salonId ? client.channels.cache.get(salonId) : null;
-    if (salon && data[uid].messageId) {
-      const msg = await salon.messages.fetch(data[uid].messageId).catch(() => null);
-      if (msg) await msg.edit({
-        embeds: [{
-          color: 0x57F287,
-          title: '🟢 Shift en cours',
-          fields: [
-            { name: 'Chatter', value: username, inline: true },
-            { name: 'Reprise', value: `<t:${Math.floor(now/1000)}:F>`, inline: true },
-            { name: 'Statut', value: '▶️ En service', inline: true },
-          ],
-          footer: { text: 'AgencyBot • Pointage' },
-          timestamp: new Date(),
-        }]
-      });
+    for (const [shiftKey, shift] of mesShiftsPauses) {
+      shift.totalPause += now - shift.debutPause;
+      shift.enPause = false;
+      shift.debutPause = null;
+      data.shifts[shiftKey] = shift;
+      count++;
+      if (salon && shift.messageId) {
+        const msg = await salon.messages.fetch(shift.messageId).catch(() => null);
+        if (msg) await msg.edit({
+          embeds: [{
+            color: 0x57F287,
+            title: '▶️ Shift Repris',
+            fields: [
+              { name: '🧑‍💻 Chatter', value: username, inline: true },
+              { name: '👩 Modele', value: shift.modele, inline: true },
+              { name: '📱 Plateforme', value: shift.plateforme, inline: true },
+              { name: '▶️ Reprise', value: `<t:${Math.floor(now/1000)}:F>`, inline: true },
+            ],
+            footer: { text: 'AgencyBot • Pointage' },
+            timestamp: new Date(),
+          }]
+        });
+      }
     }
-    return interaction.reply({ content: `▶️ Reprise enregistrée, **${username}** !`, ephemeral: true });
+    save(data);
+    return interaction.reply({ content: `▶️ ${count} shift(s) repris, **${username}** !`, ephemeral: true });
   }
 };
