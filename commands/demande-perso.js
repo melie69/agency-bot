@@ -25,26 +25,27 @@ module.exports = {
     const plateforme = interaction.fields.getTextInputValue('plateforme');
     const type = interaction.fields.getTextInputValue('type');
     const details = interaction.fields.getTextInputValue('details');
+    const embed = {
+      color: 0x5865F2,
+      title: '📝 Nouvelle Demande Personnalisee',
+      fields: [
+        { name: '🧑‍💻 Chatter', value: username, inline: true },
+        { name: '👩 Modele', value: modele, inline: true },
+        { name: '👤 Fans', value: fans, inline: true },
+        { name: '📱 Plateforme', value: plateforme, inline: true },
+        { name: '🎥 Type de contenu', value: type, inline: true },
+        { name: '💬 Details & Prix', value: details, inline: false },
+      ],
+      footer: { text: 'AgencyBot • Demandes' },
+      timestamp: new Date(),
+    };
+    // Poster dans le salon demandes ET repondre publiquement
     const salonId = process.env.CHANNEL_DEMANDES;
     const salon = salonId ? client.channels.cache.get(salonId) : null;
-    if (salon) {
-      await salon.send({
-        embeds: [{
-          color: 0x5865F2,
-          title: '📝 Nouvelle Demande Personnalisee',
-          fields: [
-            { name: '🧑‍💻 Chatter', value: username, inline: true },
-            { name: '👩 Modele', value: modele, inline: true },
-            { name: '👤 Fans', value: fans, inline: true },
-            { name: '📱 Plateforme', value: plateforme, inline: true },
-            { name: '🎥 Type de contenu', value: type, inline: true },
-            { name: '💬 Details & Prix', value: details, inline: false },
-          ],
-          footer: { text: 'AgencyBot • Demandes' },
-          timestamp: new Date(),
-        }]
-      });
+    if (salon && salon.id !== interaction.channelId) {
+      await salon.send({ embeds: [embed] });
     }
-    return interaction.reply({ content: '✅ Demande envoyée !', ephemeral: true });
+    // Reponse publique avec l'embed complet dans le salon courant
+    return interaction.reply({ embeds: [embed] });
   }
 };
