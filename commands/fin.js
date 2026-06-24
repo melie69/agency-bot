@@ -10,6 +10,7 @@ module.exports = {
   async execute(interaction, client) {
     const data = load();
     const uid = interaction.user.id;
+    const username = interaction.member?.displayName || interaction.user.username;
     if (!data[uid]?.actif) return interaction.reply({ content: 'Pas de shift actif.', ephemeral: true });
     const now = Date.now();
     const dureeTotal = now - data[uid].debut;
@@ -21,21 +22,22 @@ module.exports = {
       if (msg) await msg.edit({
         embeds: [{
           color: 0xED4245,
-          title: 'Shift Termine',
-          description: `<@${uid}> a termine son shift`,
+          title: '🔴 Shift terminé',
           fields: [
+            { name: 'Chatter', value: username, inline: true },
             { name: 'Debut', value: `<t:${Math.floor(data[uid].debut/1000)}:F>`, inline: true },
             { name: 'Fin', value: `<t:${Math.floor(now/1000)}:F>`, inline: true },
-            { name: 'Duree totale', value: fmt(dureeTotal), inline: true },
-            { name: 'Temps de pause', value: `${Math.floor(data[uid].totalPause/60000)} min`, inline: true },
-            { name: 'Temps effectif', value: fmt(dureeEffective), inline: true }
+            { name: 'Temps total', value: fmt(dureeTotal), inline: true },
+            { name: 'Temps effectif', value: fmt(dureeEffective), inline: true },
+            { name: 'Pause totale', value: fmt(data[uid].totalPause), inline: true },
           ],
-          timestamp: new Date().toISOString()
+          footer: { text: 'AgencyBot • Pointage' },
+          timestamp: new Date(),
         }]
       });
     }
-    data[uid] = { actif: false };
+    delete data[uid];
     save(data);
-    await interaction.reply({ content: `Shift termine ! Duree effective : **${fmt(dureeEffective)}**`, ephemeral: true });
+    return interaction.reply({ content: `🔴 Shift terminé, **${username}** ! Temps effectif : **${fmt(dureeEffective)}**.`, ephemeral: true });
   }
 };
