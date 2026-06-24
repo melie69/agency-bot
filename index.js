@@ -25,6 +25,14 @@ client.once(Events.ClientReady, () => {
   console.log(`Bot connecte en tant que ${client.user.tag}`);
 });
 
+// Map modal customId -> nom de commande
+const modalMap = {
+  'modal_debut': 'debut',
+  'modal_fin': 'fin',
+  'modal_demande': 'demande-perso',
+  'modal_absence': 'absence'
+};
+
 client.on(Events.InteractionCreate, async interaction => {
   // Slash commands
   if (interaction.isChatInputCommand()) {
@@ -42,10 +50,6 @@ client.on(Events.InteractionCreate, async interaction => {
 
   // Modal submissions
   if (interaction.isModalSubmit()) {
-    const modalMap = {
-      'modal_demande': 'demande-perso',
-      'modal_absence': 'absence'
-    };
     const cmdName = modalMap[interaction.customId];
     if (!cmdName) return;
     const cmd = client.commands.get(cmdName);
