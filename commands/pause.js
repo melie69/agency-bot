@@ -9,6 +9,7 @@ module.exports = {
   async execute(interaction, client) {
     const data = load();
     const uid = interaction.user.id;
+    const username = interaction.member?.displayName || interaction.user.username;
     if (!data[uid]?.actif) return interaction.reply({ content: 'Pas de shift actif.', ephemeral: true });
     if (data[uid].enPause) return interaction.reply({ content: 'Tu es deja en pause.', ephemeral: true });
     const now = Date.now();
@@ -22,16 +23,17 @@ module.exports = {
       if (msg) await msg.edit({
         embeds: [{
           color: 0xFEE75C,
-          title: 'En Pause',
-          description: `<@${uid}> est en pause`,
+          title: '⏸️ En Pause',
           fields: [
-            { name: 'Debut shift', value: `<t:${Math.floor(data[uid].debut/1000)}:F>`, inline: true },
-            { name: 'Pause depuis', value: `<t:${Math.floor(now/1000)}:R>`, inline: true }
+            { name: 'Chatter', value: username, inline: true },
+            { name: 'Pause depuis', value: `<t:${Math.floor(now/1000)}:F>`, inline: true },
+            { name: 'Statut', value: '⏸️ Pause', inline: true },
           ],
-          timestamp: new Date().toISOString()
+          footer: { text: 'AgencyBot • Pointage' },
+          timestamp: new Date(),
         }]
       });
     }
-    await interaction.reply({ content: 'Pause declaree !', ephemeral: true });
+    return interaction.reply({ content: `⏸️ Pause enregistrée, **${username}**. Repose-toi bien !`, ephemeral: true });
   }
 };
