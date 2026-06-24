@@ -22,25 +22,26 @@ module.exports = {
     const descriptif = interaction.fields.getTextInputValue('descriptif') || 'Aucun detail fourni';
     const dateDebut = interaction.fields.getTextInputValue('date_debut');
     const dateFin = interaction.fields.getTextInputValue('date_fin');
+    const embed = {
+      color: 0xED4245,
+      title: '🗓️ Fiche Absence',
+      fields: [
+        { name: '🧑‍💻 Chatter', value: username, inline: true },
+        { name: '📌 Raison', value: raison, inline: true },
+        { name: '📅 Du', value: dateDebut, inline: true },
+        { name: '📅 Au', value: dateFin, inline: true },
+        { name: '💬 Descriptif', value: descriptif, inline: false },
+      ],
+      footer: { text: 'AgencyBot • Absences' },
+      timestamp: new Date(),
+    };
+    // Poster aussi dans le salon absences si different du salon courant
     const salonId = process.env.CHANNEL_ABSENCES;
     const salon = salonId ? client.channels.cache.get(salonId) : null;
-    if (salon) {
-      await salon.send({
-        embeds: [{
-          color: 0xED4245,
-          title: '🗓️ Fiche Absence',
-          fields: [
-            { name: '🧑‍💻 Chatter', value: username, inline: true },
-            { name: '📌 Raison', value: raison, inline: true },
-            { name: '📅 Du', value: dateDebut, inline: true },
-            { name: '📅 Au', value: dateFin, inline: true },
-            { name: '💬 Descriptif', value: descriptif, inline: false },
-          ],
-          footer: { text: 'AgencyBot • Absences' },
-          timestamp: new Date(),
-        }]
-      });
+    if (salon && salon.id !== interaction.channelId) {
+      await salon.send({ embeds: [embed] });
     }
-    return interaction.reply({ content: '✅ Fiche d\'absence envoyée !', ephemeral: true });
+    // Reponse publique avec l'embed complet visible de tous
+    return interaction.reply({ embeds: [embed] });
   }
 };
