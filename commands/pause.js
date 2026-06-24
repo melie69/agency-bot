@@ -16,7 +16,6 @@ module.exports = {
       return interaction.reply({ content: 'Aucun shift actif non en pause.', ephemeral: true });
     }
     const now = Date.now();
-    // Si un seul shift: pause auto. Si plusieurs: pause tous.
     let count = 0;
     const salonId = process.env.CHANNEL_POINTAGE;
     const salon = salonId ? client.channels.cache.get(salonId) : null;
@@ -44,6 +43,6 @@ module.exports = {
       }
     }
     save(data);
-    return interaction.reply({ content: `⏸️ ${count} shift(s) mis en pause, **${username}** !`, ephemeral: true });
+    return interaction.reply({ content: `⏸️ **${username}** a mis ${count} shift(s) en pause.` });
   }
 };
