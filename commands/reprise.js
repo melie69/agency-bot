@@ -44,6 +44,6 @@ module.exports = {
       }
     }
     save(data);
-    return interaction.reply({ content: `▶️ ${count} shift(s) repris, **${username}** !`, ephemeral: true });
+    return interaction.reply({ content: `▶️ **${username}** a repris ${count} shift(s).` });
   }
 };
